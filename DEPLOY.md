@@ -39,6 +39,7 @@
    - Kéo **nội dung bên trong**, không kéo cả thư mục `toan-lop-2`, để `index.html` nằm ở gốc kho.
    - Mỗi lần tải tối đa 100 file. Nếu nhiều hơn, tải thành vài đợt (mỗi đợt vài thư mục).
    - File ẩn `.nojekyll` có thể không hiện trên Mac: bấm `Cmd + Shift + .` trong Finder để hiện file ẩn rồi kéo cùng.
+   - Khi đã hiện file ẩn, **không kéo** thư mục `.git` và `.playwright-mcp` (nếu có) – đó là dữ liệu của công cụ lập trình, không cần cho web.
 3. Đợi thanh tải chạy xong. Ở ô **Commit changes** bên dưới, ghi `Phiên bản đầu tiên` → bấm **Commit changes**.
 4. Kiểm tra: trang kho hiện `index.html`, các thư mục `css`, `js`, `assets`…
 
