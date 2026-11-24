@@ -6,6 +6,7 @@ import confetti from './lib/confetti.module.js';
 import { play } from './sound.js';
 import { mascot } from './mascot.js';
 import { esc } from './visuals.js';
+import { formatVnd } from './bonus.js';
 
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -88,6 +89,18 @@ export function badgePopup(badge) {
   return overlay(
     `<div class="fx-badge">${badge.icon}</div><div class="fx-title">Huy hiệu mới!</div><div class="fx-sub">${esc(badge.name)}</div>`,
     { ms: 2200, cls: 'fx-small' },
+  );
+}
+
+/** Tiền thưởng: đồng xu rơi vào ống heo + "leng keng" (≤ 3 giây, chạm để bỏ qua). */
+export function piggyPopup(amount, balance) {
+  play('coin');
+  const coins = reduceMotion() ? '' : [0, 1, 2].map((i) => `<span class="fx-coin" style="animation-delay:${i * 0.3}s">🪙</span>`).join('');
+  return overlay(
+    `<div class="fx-piggy-wrap">${coins}<div class="fx-piggy">🐷</div></div>
+     <div class="fx-title">Bé được thưởng ${formatVnd(amount)}!</div>
+     <div class="fx-sub">Ống heo đang có <b>${formatVnd(balance)}</b></div>`,
+    { ms: 3000, cls: 'fx-small fx-bonus' },
   );
 }
 

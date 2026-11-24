@@ -12,6 +12,7 @@ import { play } from '../sound.js';
 import { speak, stopSpeaking, questionSpeech, speechSupported } from '../speech.js';
 import { flyStar, shake, toast, badgePopup, PRAISES, CHEERS, randomOf } from '../effects.js';
 import { streakBadgeFor, getBadge, evaluateBadges } from '../badges.js';
+import { creditBonus } from '../bonus.js';
 import { createKeypad } from './keypad.js';
 import { soundToggle, confirmDialog, esc, fmtDuration } from './dom.js';
 
@@ -338,9 +339,10 @@ export function render(root, { go, params = {} }) {
     };
     addHistory(entry);
     addStars(stars);
+    const bonus = creditBonus(entry); // tiền thưởng ống heo (0 nếu không đạt / đã cộng)
     clearInProgress();
     const newBadges = evaluateBadges(entry, state.streakBadges);
-    go('result', { entry, newBadges, config: state.config, questions: state.questions });
+    go('result', { entry, newBadges, bonus, config: state.config, questions: state.questions });
   }
 
   /* ---------- Sự kiện ---------- */

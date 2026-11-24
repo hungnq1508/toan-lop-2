@@ -5,12 +5,14 @@
 import { getSettings, saveSettings, exportData, importData, clearHistory, getHistory, storageAvailable } from '../storage.js';
 import { TOPICS } from '../topics.js';
 import { createKeypad } from './keypad.js';
-import { topBar, confirmDialog, alertDialog, esc, fmtDate } from './dom.js';
+import { topBar, confirmDialog, alertDialog, promptDialog, esc, fmtDate } from './dom.js';
+import { getBonusSummary, payout, formatVnd } from '../bonus.js';
+import { bonusTableHtml, payoutListHtml } from './piggy.js';
 import { shake } from '../effects.js';
 import { play } from '../sound.js';
 import { speechSupported, hasVietnameseVoice } from '../speech.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 
 /* ---------------- Cổng phụ huynh ---------------- */
 export function renderGate(root, { go }) {
@@ -53,6 +55,7 @@ export function renderSettings(root, { go }) {
     const toggle = (key, label, hint = '') => `
       <label class="row toggle-row"><span><b>${label}</b>${hint ? `<small>${hint}</small>` : ''}</span>
         <input type="checkbox" class="switch" data-key="${key}" ${s[key] ? 'checked' : ''}></label>`;
+    const bonus = getBonusSummary();
     const daysSinceBackup = s.lastBackupAt ? Math.floor((Date.now() - s.lastBackupAt) / 86400000) : null;
 
     root.innerHTML = `
@@ -72,6 +75,21 @@ export function renderSettings(root, { go }) {
           ${toggle('sound', 'Âm thanh hiệu ứng')}
           ${toggle('voice', 'Nút nghe đọc đề', speechSupported() ? (hasVietnameseVoice() ? 'Đã có giọng tiếng Việt' : 'Chưa thấy giọng tiếng Việt – xem hướng dẫn trong DEPLOY.md') : 'Trình duyệt không hỗ trợ')}
           ${toggle('timer', 'Hiện đồng hồ bấm giờ', 'Luôn ghi nhận thời gian; chỉ ẩn/hiện khi làm bài')}
+        </section>
+
+        <section class="panel bonus-panel">
+          <h2>🐷 Tiền thưởng</h2>
+          ${toggle('bonusEnabled', 'Bật tiền thưởng', 'Bài Kiểm tra đề mới đạt từ 9 điểm được cộng tiền vào ống heo. Tắt thì không cộng thêm và ẩn với bé; số dư vẫn được giữ.')}
+          <div class="bonus-stats">
+            <div class="tile tile-bonus"><b>${formatVnd(bonus.balance)}</b><span>trong ống heo</span></div>
+            <div class="tile"><b>${formatVnd(bonus.lifetimePaid)}</b><span>tổng đã trao</span></div>
+          </div>
+          <div class="row wrap"><button class="btn btn-orange" data-act="payout" ${bonus.balance > 0 ? '' : 'disabled'}>🎁 Đã trao thưởng – đặt lại ống heo</button></div>
+          <p class="hint">Ứng dụng không xử lý tiền thật. Sau khi trao thưởng cho bé, bấm nút trên để đưa ống heo về 0.</p>
+          <h3>Mức thưởng (đạt từ 9 điểm)</h3>
+          ${bonusTableHtml()}
+          <h3>Các lần đã trao thưởng</h3>
+          ${payoutListHtml(bonus.payouts)}
         </section>
 
         <section class="panel">
@@ -154,8 +172,26 @@ export function renderSettings(root, { go }) {
       return;
     }
     if (act === 'restore') return root.querySelector('#restore-file').click();
+    if (act === 'payout') {
+      const { balance } = getBonusSummary();
+      if (balance <= 0) return;
+      const ok1 = await confirmDialog({
+        title: `Bố mẹ đã trao cho bé ${formatVnd(balance)}?`,
+        text: 'Ống heo sẽ được đặt lại về 0.',
+        ok: 'Đã trao thưởng',
+        cancel: 'Huỷ',
+        icon: '🎁',
+      });
+      if (!ok1) return;
+      const note = await promptDialog({ title: 'Ghi chú (không bắt buộc)', placeholder: 'Ví dụ: Mua bộ Lego', maxLength: 50, icon: '📝' });
+      if (note === null) return;
+      const tx = payout(note);
+      paint();
+      if (tx) await alertDialog('Đã đặt lại ống heo', `Đã ghi nhận trao thưởng ${formatVnd(tx.amount)}.`, '✅');
+      return;
+    }
     if (act === 'clear') {
-      const ok1 = await confirmDialog({ title: 'Xoá toàn bộ lịch sử?', text: 'Mọi bài làm, sao và huy hiệu sẽ bị xoá.', ok: 'Xoá', cancel: 'Không', danger: true, icon: '⚠️' });
+      const ok1 = await confirmDialog({ title: 'Xoá toàn bộ lịch sử?', text: 'Mọi bài làm, sao và huy hiệu sẽ bị xoá. Tiền thưởng trong ống heo được giữ nguyên.', ok: 'Xoá', cancel: 'Không', danger: true, icon: '⚠️' });
       if (!ok1) return;
       const ok2 = await confirmDialog({ title: 'Bố mẹ chắc chắn chứ?', text: 'Không thể hoàn tác. Nên sao lưu trước khi xoá.', ok: 'Chắc chắn xoá', cancel: 'Huỷ', danger: true, icon: '🗑️' });
       if (!ok2) return;
@@ -181,7 +217,7 @@ export function renderSettings(root, { go }) {
         .then((txt) => {
           const r = importData(JSON.parse(txt));
           paint();
-          return alertDialog('Khôi phục thành công', `Đã thêm ${r.added} bài. Lịch sử hiện có ${r.total} bài.`, '✅');
+          return alertDialog('Khôi phục thành công', `Đã thêm ${r.added} bài. Lịch sử hiện có ${r.total} bài. Đã thêm ${r.bonusAdded} lần thưởng.`, '✅');
         })
         .catch((err) => alertDialog('Không khôi phục được', err instanceof SyntaxError ? 'File bị hỏng hoặc không phải file JSON.' : err.message, '⚠️'));
     }

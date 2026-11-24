@@ -2,7 +2,8 @@
  * Màn hình kết quả + Xem lại bài.
  * Hiệu ứng theo điểm: ≥ 90% pháo hoa · 60–<90% "Hoàn thành tốt" · < 60% "Thử thách thất bại".
  */
-import { celebrateWin, celebrateGood, failChallenge, badgePopup } from '../effects.js';
+import { celebrateWin, celebrateGood, failChallenge, badgePopup, piggyPopup } from '../effects.js';
+import { bonusEnabled, isBonusEligible, rewardFor, getBonusSummary, earnedByHistory, formatVnd } from '../bonus.js';
 import { getBadge } from '../badges.js';
 import { topicName, levelName, MODES } from '../topics.js';
 import { renderVisual, renderBig } from '../visuals.js';
@@ -15,7 +16,10 @@ export function topicsLabel(topics) {
 }
 
 export function render(root, { go, params }) {
-  const { entry, newBadges = [], config, questions } = params;
+  const { entry, newBadges = [], bonus = 0, config, questions } = params;
+  const showBonus = bonusEnabled();
+  // Bài Kiểm tra đề mới chưa đạt 9 điểm → nhắc nhẹ mức thưởng (không hiện với bài làm lại)
+  const bonusHint = showBonus && !bonus && isBonusEligible(entry) && entry.correct * 10 < 9 * entry.total;
   const pct = entry.scorePct;
   const tier = pct >= 90 ? 'win' : pct >= 60 ? 'good' : 'fail';
   const wrongQs = questions.filter((_, i) => !entry.questions[i].isCorrect);
@@ -40,11 +44,13 @@ export function render(root, { go, params }) {
       </section>
       <section class="score-tiles">
         <div class="tile tile-score"><b>${fmtScore(entry.score10)}</b><span>điểm</span></div>
+        ${showBonus && bonus ? `<div class="tile tile-bonus"><b>🐷 +${formatVnd(bonus)}</b><span>tiền thưởng</span></div>` : ''}
         <div class="tile tile-pct"><b>${pct}%</b><span>tỉ lệ đúng</span></div>
         <div class="tile tile-ok"><b>✓ ${entry.correct}</b><span>câu đúng</span></div>
         <div class="tile tile-bad"><b>✗ ${entry.total - entry.correct}</b><span>câu sai</span></div>
         <div class="tile tile-time"><b>⏱ ${fmtDuration(entry.durationMs)}</b><span>thời gian</span></div>
       </section>
+      ${bonusHint ? `<p class="bonus-hint">🐷 Đạt từ 9 điểm để nhận <b>+${formatVnd(rewardFor(entry.total, entry.level))}</b> vào ống heo nhé!</p>` : ''}
       ${newBadges.length ? `<section class="new-badges"><h3>Huy hiệu mới</h3><div>${newBadges.map((id) => getBadge(id)).filter(Boolean).map((b) => `<span class="badge-chip">${b.icon} ${esc(b.name)}</span>`).join('')}</div></section>` : ''}
       <section class="result-actions">
         ${tier === 'fail' ? '<button class="btn btn-big btn-orange" data-act="retry">🔄 Thử lại</button>' : ''}
@@ -79,6 +85,7 @@ export function render(root, { go, params }) {
       else if (tier === 'good') await celebrateGood(entry.stars);
       else action = await failChallenge();
       if (action === 'retry') return actions.retry();
+      if (showBonus && bonus && root.querySelector('.result')) await piggyPopup(bonus, getBonusSummary().balance);
       for (const id of newBadges.filter((b) => !b.startsWith('streak') || entry.mode === 'test')) {
         const b = getBadge(id);
         if (b && root.querySelector('.result')) await badgePopup(b);
@@ -91,13 +98,14 @@ export function render(root, { go, params }) {
 export function renderReview(root, { go, params }) {
   const { entry } = params;
   const qs = entry.questions || [];
+  const earned = bonusEnabled() ? earnedByHistory().get(entry.id) : 0;
   root.innerHTML = `
   <div class="screen review">
     ${topBar({ back: 'back', title: 'Xem lại bài' })}
     <main class="review-main">
       <div class="review-head">
         <div><b>${esc(topicsLabel(entry.topics))}</b> · ${levelName(entry.level)} · ${MODES[entry.mode]?.name || ''}</div>
-        <div>${fmtDate(entry.finishedAt)} · ${fmtScore(entry.score10)} điểm · ✓ ${entry.correct}/${entry.total} · ⏱ ${fmtDuration(entry.durationMs)}</div>
+        <div>${fmtDate(entry.finishedAt)} · ${fmtScore(entry.score10)} điểm · ✓ ${entry.correct}/${entry.total} · ⏱ ${fmtDuration(entry.durationMs)}${earned ? ` · <span class="bonus-tag">💰 +${formatVnd(earned)}</span>` : ''}</div>
       </div>
       ${qs.length ? '' : '<p class="empty">Bài này đã cũ nên không còn lưu chi tiết từng câu.</p>'}
       <ol class="review-list">
@@ -119,6 +127,7 @@ export function renderReview(root, { go, params }) {
   root.querySelector('.review').addEventListener('click', (e) => {
     if (e.target.closest('[data-act="back"]')) {
       if (params.back === 'result') go('result', params.resultParams);
+      else if (params.back === 'piggy') go('piggy');
       else go('history');
     }
   });

@@ -7,6 +7,7 @@ import { TOPICS, MIXED_ID, levelName, MODES } from '../topics.js';
 import { BADGES } from '../badges.js';
 import { topBar, esc, fmtDate, fmtDuration, fmtScore } from './dom.js';
 import { topicsLabel } from './result.js';
+import { bonusEnabled, getBonusSummary, earnedByHistory, formatVnd } from '../bonus.js';
 
 const filter = { topic: 'all', range: 'all' }; // ghi nhớ trong phiên
 
@@ -72,6 +73,8 @@ export function render(root, { go }) {
     const best = acc.length ? acc.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
     const worst = acc.length > 1 ? acc.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
 
+    const showBonus = bonusEnabled();
+    const earned = showBonus ? earnedByHistory() : new Map();
     const chip = (key, id, name) => `<button class="chip ${filter[key] === id ? 'on' : ''}" data-f="${key}" data-v="${id}">${esc(name)}</button>`;
 
     root.innerHTML = `
@@ -87,6 +90,7 @@ export function render(root, { go }) {
           <div class="tile"><b>${list.length}</b><span>bài đã làm</span></div>
           <div class="tile"><b>${fmtScore(avg)}</b><span>điểm trung bình</span></div>
           <div class="tile"><b>⭐ ${getStats().totalStars}</b><span>tổng số sao</span></div>
+          ${showBonus ? `<button class="tile tile-bonus" data-act="piggy"><b>🐷 ${formatVnd(getBonusSummary().balance)}</b><span>Ống heo</span></button>` : ''}
         </section>
 
         ${list.length ? `<section class="panel"><h2>📊 Điểm 10 lần gần nhất</h2>${barChart(list)}</section>` : ''}
@@ -114,7 +118,8 @@ export function render(root, { go }) {
             <li><button class="h-item tier-${h.scorePct >= 90 ? 'win' : h.scorePct >= 60 ? 'good' : 'fail'}" data-id="${esc(h.id)}">
               <span class="h-score">${fmtScore(h.score10 ?? h.scorePct / 10)}<small>điểm</small></span>
               <span class="h-info"><b>${esc(topicsLabel(h.topics))}</b>
-                <small>${fmtDate(h.finishedAt)} · ${levelName(h.level)} · ${MODES[h.mode]?.name || ''} · ${h.correct}/${h.total} câu · ⏱ ${fmtDuration(h.durationMs)}</small></span>
+                <small>${fmtDate(h.finishedAt)} · ${levelName(h.level)} · ${MODES[h.mode]?.name || ''} · ${h.correct}/${h.total} câu · ⏱ ${fmtDuration(h.durationMs)}</small>
+                ${earned.get(h.id) ? `<span class="bonus-tag">💰 +${formatVnd(earned.get(h.id))}</span>` : ''}</span>
               <span class="h-stars">${'★'.repeat(h.stars || 0)}${'☆'.repeat(3 - (h.stars || 0))}</span>
             </button></li>`).join('')}</ul>` : `<p class="empty">${all.length ? 'Không có bài nào khớp bộ lọc.' : 'Bé chưa làm bài nào. Bấm “Bắt đầu học” nhé!'}</p>`}
         </section>
@@ -138,6 +143,7 @@ export function render(root, { go }) {
       return;
     }
     if (e.target.closest('[data-act="home"]')) go('home');
+    else if (e.target.closest('[data-act="piggy"]')) go('piggy');
   };
   paint();
   return () => (root.onclick = null);

@@ -12,6 +12,7 @@ import * as quiz from './ui/quiz.js';
 import * as result from './ui/result.js';
 import * as history from './ui/history.js';
 import * as settings from './ui/settings.js';
+import * as piggy from './ui/piggy.js';
 import { soundToggle } from './ui/dom.js';
 
 const root = document.getElementById('app');
@@ -25,6 +26,7 @@ const SCREENS = {
   history: history.render,
   gate: settings.renderGate,
   settings: settings.renderSettings,
+  piggy: piggy.render,
 };
 
 let cleanup = null;

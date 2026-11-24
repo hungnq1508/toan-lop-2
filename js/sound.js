@@ -146,6 +146,14 @@ const SYNTH = {
     seq.forEach(([f, s, d], i) => tone(f, s, d, { type: 'sawtooth', vol: 0.12, slideTo: i === 3 ? 290 : null, vibrato: i === 3 ? 8 : 3, attack: 0.04 }));
     seq.forEach(([f, s, d]) => tone(f / 2, s, d, { type: 'sine', vol: 0.25, attack: 0.04 }));
   },
+  /** Tiền thưởng: đồng xu "leng keng" rơi vào ống heo */
+  coin() {
+    [0, 0.3, 0.6].forEach((s) => {
+      tone(NOTE.B5 * 2, s, 0.12, { type: 'square', vol: 0.12 });
+      tone(NOTE.E6 * 2, s + 0.07, 0.45, { type: 'triangle', vol: 0.35 });
+    });
+    tone(NOTE.E6, 0.95, 0.5, { type: 'sine', vol: 0.3 });
+  },
   /** Ngôi sao bay */
   star() {
     tone(NOTE.C6, 0, 0.12, { vol: 0.2 });
@@ -153,7 +161,7 @@ const SYNTH = {
   },
 };
 
-/** Phát âm theo tên: correct | wrong | tap | streak | win | good | fail | star */
+/** Phát âm theo tên: correct | wrong | tap | streak | win | good | fail | star | coin */
 export function play(name) {
   if (!getSettings().sound) return;
   if (!ensureContext()) return;
