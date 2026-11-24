@@ -64,8 +64,14 @@
 3. Bấm nút **Chia sẻ** (ô vuông có mũi tên lên) → **Thêm vào Màn hình chính** → đặt tên `Học Toán` → **Thêm**.
 
 **Dùng Chrome (iPadOS 16.4 trở lên):**
-1. Mở Chrome → gõ địa chỉ như trên.
-2. Bấm nút **Chia sẻ** ở thanh địa chỉ → **Thêm vào Màn hình chính** → **Thêm**.
+1. Mở Chrome → gõ địa chỉ như trên, đợi trang tải xong.
+2. Bấm nút **Chia sẻ** (ô vuông có mũi tên lên) ở **bên phải thanh địa chỉ**, phía trên cùng màn hình.
+   - Không thấy nút này: bấm nút **⋯** (Thêm) → **Chia sẻ…**
+3. Bảng chia sẻ của iPad hiện ra. Từ iPadOS 26, bảng này chỉ hiện vài tác vụ: bấm **Xem thêm** (hoặc **⋯**) trong bảng để mở danh sách đầy đủ, rồi **vuốt lên** tìm **Thêm vào MH chính** (iPad tiếng Việt viết tắt "MH" = Màn hình; tiếng Anh là *Add to Home Screen*).
+   - Vẫn không thấy: kéo xuống cuối danh sách → **Sửa tác vụ…** → bật **Thêm vào MH chính** (bấm dấu **+** xanh) → **Xong**.
+4. Đặt tên `Học Toán` → bấm **Thêm** (góc trên bên phải).
+
+> Không tìm thấy mục này ở cả hai cách trên: iPad có thể đang chạy iPadOS cũ hơn 16.4 (xem ở Cài đặt → Cài đặt chung → Giới thiệu → Phiên bản phần mềm). Khi đó hãy dùng **Safari** như hướng dẫn ở trên, hoặc cập nhật iPadOS.
 
 **Sau khi cài:**
 - Bé luôn mở web từ **biểu tượng trên Màn hình chính**. Safari, Chrome và biểu tượng có thể lưu lịch sử riêng, nên chỉ dùng **một** biểu tượng để lịch sử không bị tách.
