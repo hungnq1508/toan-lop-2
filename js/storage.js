@@ -3,18 +3,20 @@
  *
  * Khoá (tiền tố "tl2:"):
  *   version     số phiên bản cấu trúc dữ liệu (để nâng cấp sau này)
- *   settings    { childName, sound, voice, timer, enabledTopics[], knownTopics[], lastBackupAt }
+ *   settings    { childName, sound, voice, timer, bonusEnabled, enabledTopics[], knownTopics[], lastBackupAt }
  *   history     [ { id, startedAt, finishedAt, durationMs, topics[], level, mode, total, correct,
  *                   scorePct, stars, questions[ {text, big, visual, choices, answer, userAnswer, isCorrect, ...} ] } ]
  *                 (mới nhất ở đầu; chỉ giữ chi tiết câu hỏi của 500 bài gần nhất)
  *   inProgress  bài đang làm dở (hoặc null)
  *   badges      [ { id, count, firstAt, lastAt } ]
  *   stats       { totalStars }
+ *   bonus       { ledger: [ { id, type: 'earn'|'payout', at, amount, ... } ] }   (tiền thưởng – xem js/bonus.js)
+ *                 (không bị "Xoá toàn bộ lịch sử" xoá; số dư luôn tính lại từ sổ giao dịch)
  */
 import { TOPICS } from './topics.js';
 
 const PREFIX = 'tl2:';
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 export const MAX_DETAILED = 500;
 
 /* ---------- Lớp an toàn quanh localStorage ---------- */
@@ -59,7 +61,9 @@ function migrate() {
   const v = read('version', 0);
   if (v === DATA_VERSION) return;
   // v0 → v1: chưa có dữ liệu cũ, chỉ cần ghi số phiên bản.
-  // Các phiên bản sau thêm bước chuyển đổi tại đây: if (v < 2) { ... }
+  // v1 → v2: thêm ống heo tiền thưởng (bắt đầu từ 0, không cộng hồi tố – quyết định D1).
+  if (v < 2 && !read('bonus', null)) write('bonus', { ledger: [] });
+  // Các phiên bản sau thêm bước chuyển đổi tại đây: if (v < 3) { ... }
   write('version', DATA_VERSION);
 }
 migrate();
@@ -73,6 +77,7 @@ export function defaultSettings() {
     sound: true,
     voice: true,
     timer: false,
+    bonusEnabled: true,
     enabledTopics: allTopicIds(),
     knownTopics: allTopicIds(),
     lastBackupAt: null,
@@ -165,6 +170,43 @@ export function addStars(n) {
   write('stats', s);
 }
 
+/* ---------- Tiền thưởng (ống heo) ---------- */
+export function getBonus() {
+  const b = read('bonus', null);
+  return { ledger: Array.isArray(b?.ledger) ? b.ledger : [] };
+}
+
+export function saveBonus(bonus) {
+  return write('bonus', { ledger: bonus.ledger });
+}
+
+const MAX_EARN = 10000;
+const isInt = (n) => Number.isInteger(n) && n >= 0;
+
+/** Giao dịch hợp lệ khi khôi phục (giao dịch lỗi bị bỏ qua). */
+export function validTransaction(t) {
+  if (!t || typeof t.id !== 'string' || !t.id || typeof t.at !== 'number' || !Number.isFinite(t.at)) return false;
+  if (t.type === 'earn') return isInt(t.amount) && t.amount <= MAX_EARN;
+  if (t.type === 'payout') return isInt(t.amount);
+  return false;
+}
+
+/**
+ * Gộp hai sổ giao dịch theo `id` (đã có thì giữ bản đang có), sắp xếp theo thời gian.
+ * @returns {{ledger:object[], added:object[]}}
+ */
+export function mergeLedger(current, incoming) {
+  const ids = new Set(current.map((t) => t.id));
+  const added = [];
+  for (const t of incoming || []) {
+    if (!validTransaction(t) || ids.has(t.id)) continue;
+    ids.add(t.id);
+    added.push(t);
+  }
+  const ledger = [...current, ...added].sort((a, b) => a.at - b.at);
+  return { ledger, added };
+}
+
 /* ---------- Sao lưu / Khôi phục ---------- */
 export function exportData() {
   return {
@@ -175,13 +217,15 @@ export function exportData() {
     history: getHistory(),
     badges: getBadges(),
     stats: getStats(),
+    bonus: getBonus(),
   };
 }
 
 /**
  * Khôi phục từ file sao lưu. Lịch sử được GỘP (không mất bài đang có),
- * huy hiệu lấy số lần lớn hơn, cài đặt lấy theo file.
- * @returns {{added:number,total:number}}
+ * huy hiệu lấy số lần lớn hơn, cài đặt lấy theo file, sổ tiền thưởng gộp theo id.
+ * Nhận file v1 (chưa có `bonus`) và v2.
+ * @returns {{added:number,total:number,bonusAdded:number}}
  */
 export function importData(data) {
   if (!data || data.app !== 'toan-lop-2' || !Array.isArray(data.history)) {
@@ -211,11 +255,18 @@ export function importData(data) {
   stats.totalStars = Math.max(stats.totalStars, data.stats?.totalStars || 0);
   write('stats', stats);
 
+  const incoming = Array.isArray(data.bonus?.ledger) ? data.bonus.ledger : [];
+  const merged = mergeLedger(getBonus().ledger, incoming);
+  const bonusAdded = merged.added.filter((t) => t.type === 'earn').length;
+  if (merged.added.length) saveBonus({ ledger: merged.ledger });
+
   if (data.settings) {
-    const { childName, sound, voice, timer, enabledTopics } = data.settings;
-    saveSettings({ childName, sound, voice, timer, enabledTopics });
+    const { childName, sound, voice, timer, enabledTopics, bonusEnabled } = data.settings;
+    const patch = { childName, sound, voice, timer, enabledTopics };
+    if (typeof bonusEnabled === 'boolean') patch.bonusEnabled = bonusEnabled;
+    saveSettings(patch);
   }
-  return { added: fresh.length, total: current.length + fresh.length };
+  return { added: fresh.length, total: current.length + fresh.length, bonusAdded };
 }
 
 /** Xin trình duyệt giữ dữ liệu lâu dài (giảm nguy cơ iOS tự xoá). */

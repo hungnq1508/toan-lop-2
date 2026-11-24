@@ -15,6 +15,7 @@ Không cần đăng nhập, không máy chủ, không quảng cáo, không thu t
 | Hình thức | **Luyện tập** (biết đúng/sai ngay, có giải thích) · **Kiểm tra** (lưới câu, sửa câu trước, nộp bài) · 10 hoặc 20 câu |
 | Hiệu ứng | Âm "ting"/"boing", sao bay, huy hiệu chuỗi 5 câu đúng, pháo hoa + cúp vàng (≥ 90%), "Hoàn thành tốt" (60–<90%), "Thử thách thất bại" vui nhộn (< 60%) |
 | Kết quả & lịch sử | Điểm thang 10 và %, xem lại bài, làm lại đề / câu sai / đề mới · lọc lịch sử, biểu đồ 10 lần gần nhất, chủ đề mạnh/yếu, bộ sưu tập huy hiệu |
+| Tiền thưởng "Ống heo" | Bài **Kiểm tra** đề mới (10/20 câu) đạt từ 9 điểm được cộng 1.000–6.000đ (theo số câu × mức độ, bảng `BONUS_TABLE` trong `js/bonus.js`) vào ống heo ảo; bé xem số dư, bố mẹ trao thưởng thật rồi đặt lại trong Cài đặt. Không xử lý tiền thật |
 | Phụ huynh | Cổng câu hỏi người lớn, tên bé, âm thanh, giọng đọc, đồng hồ, bật/tắt chủ đề, sao lưu/khôi phục JSON, xoá lịch sử (xác nhận 2 lần) |
 | Khác | Nghe đọc đề tiếng Việt (Web Speech API), lưu bài dở để làm tiếp, nhắc sao lưu mỗi tháng |
 
@@ -37,6 +38,7 @@ npm test               # Node 18+, không cần cài thêm gói
 
 - Sinh ~1.500 câu cho **mỗi** chủ đề × mức độ và tính lại đáp án một cách độc lập (biểu thức, so sánh, đúng/sai, đặt tính, lời giải toán có lời văn, tia số, đường gấp khúc).
 - Kiểm tra mọi số trong câu hỏi/đáp án nằm trong 0..100, đáp án có trong lựa chọn, lựa chọn không trùng.
+- Tiền thưởng: điều kiện và mức thưởng, chống cộng trùng, số dư qua các lần trao thưởng, gộp sao lưu (cả file v1).
 - Kiểm tra `service-worker.js` liệt kê đủ file, chỉ dùng đường dẫn tương đối, không có liên kết ra ngoài.
 
 ## Cấu trúc thư mục
@@ -49,6 +51,7 @@ js/topics.js                  DANH MỤC CHỦ ĐỀ (thêm chủ đề mới �
 js/quiz-engine.js             tạo đề, chấm điểm
 js/generators/*.js            mỗi chủ đề là một module sinh câu hỏi độc lập
 js/storage.js                 localStorage, sao lưu/khôi phục
+js/bonus.js                   tiền thưởng ống heo: bảng mức thưởng, cộng/trao thưởng, số dư
 js/sound.js  js/speech.js     âm thanh, giọng đọc
 js/effects.js  js/badges.js   hiệu ứng, huy hiệu
 js/visuals.js  js/mascot.js   hình minh hoạ SVG, linh vật

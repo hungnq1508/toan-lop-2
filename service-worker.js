@@ -5,7 +5,7 @@
  * Thêm file mới (js, json, ảnh, âm thanh…) thì thêm vào PRECACHE
  * (chạy `npm test` để kiểm tra danh sách không thiếu/thừa file).
  */
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0';
 const CACHE_NAME = `toan-lop-2-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -19,6 +19,7 @@ const PRECACHE = [
   './js/speech.js',
   './js/effects.js',
   './js/badges.js',
+  './js/bonus.js',
   './js/mascot.js',
   './js/visuals.js',
   './js/topics.js',
@@ -40,6 +41,7 @@ const PRECACHE = [
   './js/ui/result.js',
   './js/ui/history.js',
   './js/ui/settings.js',
+  './js/ui/piggy.js',
   './data/questions/geometry.json',
   './data/questions/statistics.json',
   './assets/fonts/nunito-latin-400-normal.woff2',

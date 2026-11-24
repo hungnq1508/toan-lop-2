@@ -3,6 +3,7 @@ import { getSettings, getInProgress, getHistory, getStats } from '../storage.js'
 import { mascot } from '../mascot.js';
 import { topBar, esc } from './dom.js';
 import { topicName } from '../topics.js';
+import { bonusEnabled, getBonusSummary, formatVnd } from '../bonus.js';
 
 const BACKUP_REMIND_DAYS = 30;
 
@@ -11,6 +12,7 @@ export function render(root, { go }) {
   const ip = getInProgress();
   const history = getHistory();
   const stars = getStats().totalStars;
+  const showPiggy = bonusEnabled();
   const needBackup =
     history.length > 0 && (!s.lastBackupAt || Date.now() - s.lastBackupAt > BACKUP_REMIND_DAYS * 86400000);
   const hour = new Date().getHours();
@@ -18,7 +20,7 @@ export function render(root, { go }) {
 
   root.innerHTML = `
   <div class="screen home">
-    ${topBar({ middle: `<div class="star-total" aria-label="Tổng số sao">⭐ ${stars}</div>` })}
+    ${topBar({ middle: `<div class="home-totals"><div class="star-total" aria-label="Tổng số sao">⭐ ${stars}</div>${showPiggy ? `<button class="piggy-chip" data-act="piggy" aria-label="Ống heo: ${formatVnd(getBonusSummary().balance)}">🐷 ${formatVnd(getBonusSummary().balance)}</button>` : ''}</div>` })}
     <main class="home-main">
       <div class="home-hero">
         ${mascot('happy', 'home-mascot bounce')}
@@ -46,5 +48,6 @@ export function render(root, { go }) {
     else if (act === 'history') go('history');
     else if (act === 'settings') go('gate');
     else if (act === 'resume') go('quiz', { resume: true });
+    else if (act === 'piggy') go('piggy');
   });
 }

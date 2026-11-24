@@ -52,6 +52,38 @@ export function confirmDialog({ title, text = '', ok = 'Đồng ý', cancel = 'K
   });
 }
 
+/**
+ * Hộp nhập một dòng chữ (tuỳ chọn).
+ * @returns {Promise<string|null>} chuỗi đã nhập, hoặc null nếu bấm Huỷ
+ */
+export function promptDialog({ title, text = '', placeholder = '', maxLength = 50, ok = 'Xác nhận', cancel = 'Huỷ', icon = '✏️' }) {
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.className = 'modal';
+    el.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-icon">${icon}</div>
+      <h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}
+      <input type="text" class="text-input modal-input" maxlength="${maxLength}" placeholder="${esc(placeholder)}" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn btn-gray" data-r="0">${esc(cancel)}</button>
+        <button class="btn btn-green" data-r="1">${esc(ok)}</button>
+      </div></div>`;
+    document.body.appendChild(el);
+    const input = el.querySelector('input');
+    const close = (yes) => {
+      el.remove();
+      resolve(yes ? input.value.trim().slice(0, maxLength) : null);
+    };
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-r]');
+      if (b) close(b.dataset.r === '1');
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') close(true);
+    });
+  });
+}
+
 /** Thông báo đơn giản một nút. */
 export const alertDialog = (title, text = '', icon = 'ℹ️') => confirmDialog({ title, text, ok: 'Đã hiểu', cancel: null, icon });
 

@@ -8,6 +8,7 @@ import { getSettings, getInProgress } from '../storage.js';
 import { TOPICS, LEVELS, MODES, MIXED } from '../topics.js';
 import { topBar, confirmDialog, esc } from './dom.js';
 import { play, unlock } from '../sound.js';
+import { bonusEnabled, rewardFor, formatVnd } from '../bonus.js';
 
 // Ghi nhớ lựa chọn lần trước trong phiên làm việc
 const last = { topics: [], mixed: false, count: 10, level: 1 };
@@ -52,7 +53,8 @@ export function render(root, { go }) {
             <span>Biết đúng sai ngay sau mỗi câu</span></button>
           <button class="mode-card test" data-mode="test">
             <span class="mc-ico">${MODES.test.icon}</span><b>${MODES.test.name}</b>
-            <span>Làm hết bài rồi bấm Nộp bài</span></button>
+            <span>Làm hết bài rồi bấm Nộp bài</span>
+            ${bonusEnabled() && rewardFor(cfg.count, cfg.level) ? `<span class="mc-bonus">Đạt từ 9 điểm: <b>+${formatVnd(rewardFor(cfg.count, cfg.level))}</b> 🐷</span>` : ''}</button>
         </div>`;
     }
     root.innerHTML = `<div class="screen setup">${topBar({ back: 'back', middle: steps })}<main class="setup-main">${body}</main></div>`;
